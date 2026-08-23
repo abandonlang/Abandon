@@ -43,10 +43,10 @@ class Value {
     private:
     std::variant<
         std::monostate, 
-        Immediate,
-        IdVariable,
-        int,
-        TypeType,
+        Immediate,    // immediate
+        IdVariable,   // iv, if
+        int,          // reg number
+        TypeType,     // tags of a type
         SpecialMark
     > data_;
     public:

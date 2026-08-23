@@ -21,6 +21,7 @@ enum IROp {
     iv -> id.variable
     if -> id.function (but use `iv`)
     t  -> temp (but use `iv`)
+    reg -> register
     */
     Op_none,
     Op_pop_iv,
