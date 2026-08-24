@@ -54,7 +54,7 @@ void StackEraser::Handle_call_if(const IR & i) {
             // load from stack
             this->append({Op_load_mem_reg, Value(save_count+offsets.at(p.getReg())), *it});
         } else {
-            this->loadToReg(p, *it);
+            this->loadToReg(p, *it, true);
         }
         ++ it;
     }
