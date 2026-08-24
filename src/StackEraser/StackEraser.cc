@@ -1,108 +1,16 @@
 #include "StackEraser.h"
-#include <format>
 #include <string>
+#include <algorithm>
 #include "../SayError/SayError.h"
 #ifdef DEBUG
 #include <iostream>
 #endif
-
-bool StackEraser::isFloat(Value val) const {
-    if (val.isImmediate()) {
-        return val.getImmediate().type == TYPE_FLOAT;
-    }
-    if (val.isReg()) {
-        int reg_int = val.getReg();
-        return reg_int >= XMM0_NUMBER && reg_int < XMM0_NUMBER + XMM_NUMBER;
-    }
-    if (val.isVariable()) {
-        std::string var_name = val.getIdVariable().content;
-        SymbolValue sv = this->symbol->get_variable(var_name);
-        return sv.isExist && sv.isVariable && sv.type == TYPE_FLOAT;
-    }
-    return false;
-}
-
-void StackEraser::markUsed(int n) {
-    if (n >= 0 && n < ALL_REGS_NUMBER) {
-        this->is_used[n] = true;
-    }
-}
-
-Value StackEraser::getReg() {
-    for (int i = 0;  i < COMMON_REGS_NUMBER;  i ++) {
-        if (!this->is_used[i]) {
-            this->is_used[i] = true;
-            return Value(i);
-        }
-    }
-    sayError("Spill is not supported now.");
-    return (-1); // TODO
-}
-Value StackEraser::getFloatReg() {
-    for (int i = XMM0_NUMBER;  i < ALL_REGS_NUMBER;  i ++) {
-        if (!this->is_used[i]) {
-            this->is_used[i] = true;
-            return Value(i);
-        }
-    }
-    sayError("Spill is not supported now.");
-    return (-1); // TODO
-}
-Value StackEraser::getReg(Value from) {
-    if (this->isFloat(from)) {
-        return this->getFloatReg();
-    }
-    return this->getReg();
-}
-Value StackEraser::getCallerReg(int number) {
-    // RDI, RSI, RDX, RCX, R8, R9
-    int call_regs[] = {RDI_NUMBER, RSI_NUMBER, RDX_NUMBER, RCX_NUMBER, R8_NUMBER, R9_NUMBER};
-    return Value(call_regs[number]);
-}
-Value StackEraser::getCallerFloatReg(int number) {
-    int call_regs[] = {
-        XMM0_NUMBER, XMM1_NUMBER, XMM2_NUMBER, XMM3_NUMBER, 
-        XMM4_NUMBER, XMM5_NUMBER, XMM6_NUMBER, XMM7_NUMBER
-    };
-    return Value(call_regs[number]);
-}
 
 StackEraser::StackEraser(IRs * irs, Symbol * symbol) {
     this->old = irs;
     this->irs = new IRs();
     this->Handle_sign_sentence_end({});
     this->symbol = symbol;
-}
-void StackEraser::releaseReg(Value reg) {
-    int r = reg.getReg();
-    if (r <= ALL_REGS_NUMBER && r >= 0) {
-        this->is_used[r] = false;
-    } else {
-        // TODO
-    }
-}
-
-Value StackEraser::loadToReg(Value t) {
-    return this->loadToReg(t, this->getReg(t));
-}
-Value StackEraser::loadToReg(Value t, Value reg) {
-    return this->loadToReg(t, reg, false);
-}
-Value StackEraser::loadToReg(Value t, Value reg, bool isMustToReg) {
-    IR ir;
-    if (t.isVariable()) {
-        this->append({Op_load_iv_reg, t, reg});
-    } else if (t.isImmediate()) {
-        this->append({Op_load_imm_reg, t, reg});
-    } else if (t.isReg()) {
-        if (isMustToReg) {
-            this->append({Op_mov_reg_reg, reg, t});
-        } else {
-            this->releaseReg(reg);
-            return t;
-        }
-    }
-    return reg;
 }
 
 inline bool StackEraser::isStackUsed(int n) {
@@ -112,7 +20,7 @@ inline bool StackEraser::isStackUsed(int n) {
 int StackEraser::getStack() {
     int i = (-1);
     while (this->isStackUsed(i)) {
-        i --;
+        -- i;
     }
     this->stack_used.insert(i);
     return i;
@@ -176,7 +84,7 @@ void StackEraser::Handle_xxx(const IR & i) {
     Value a_reg = this->loadToReg(this->pop());
     Value b_reg = this->loadToReg(this->pop());
     // check if b_reg is a float
-    if (b_reg.getReg() >= XMM0_NUMBER && b_reg.getReg() < XMM0_NUMBER + XMM_NUMBER) {
+    if (std::ranges::find(xmm_regs, b_reg.getReg()) != xmm_regs.end()) {
         switch (i.op) {
             case Op_add:
                 this->append({Op_addsd_reg_reg, b_reg, a_reg});
@@ -255,19 +163,19 @@ void StackEraser::Handle_div(const IR & i) {
     }
     // if not, then
     bool isPopRax = false, isPopRdx = false;
-    if (a != Value(RAX_NUMBER)) {
-        if (this->is_used[RAX_NUMBER]) {
-            this->append({Op_push_reg, Value(RAX_NUMBER)});
+    if (a != Value(rax)) {
+        if (this->isRegUsed(rax)) {
+            this->append({Op_push_reg, Value(rax)});
             isPopRax = true;
         }
-        this->loadToReg(a, Value(RAX_NUMBER));
+        this->loadToReg(a, Value(rax));
     }
-    if (this->is_used[RDX_NUMBER]) {
-        this->append({Op_push_reg, Value(RDX_NUMBER)});
+    if (this->isRegUsed(rdx)) {
+        this->append({Op_push_reg, Value(rdx)});
         isPopRdx = true;
     }
-    this->is_used[RAX_NUMBER] = true;
-    this->is_used[RDX_NUMBER] = true;
+    this->markUsed(rax);
+    this->markUsed(rdx);
     this->append({Op_cqo});
     if (b.isImmediate()) {
         Value b_reg = this->loadToReg(b);
@@ -277,15 +185,15 @@ void StackEraser::Handle_div(const IR & i) {
         this->append({Op_idiv_val, b});
     }
     if (isPopRdx) {
-        this->append({Op_pop_reg, Value(RDX_NUMBER)});
+        this->append({Op_pop_reg, Value(rdx)});
     } else {
-        this->is_used[RDX_NUMBER] = false;
+        this->releaseReg(rdx);
     }
     if (isPopRax) {
-        this->push(this->loadToReg(Value(RAX_NUMBER)));
-        this->append({Op_pop_reg, Value(RAX_NUMBER)});
+        this->push(this->loadToReg(Value(rax)));
+        this->append({Op_pop_reg, Value(rax)});
     } else {
-        this->push(Value(RAX_NUMBER));
+        this->push(Value(rax));
     }
 }
 void StackEraser::Handle_mod(const IR & ir) {
@@ -294,19 +202,19 @@ void StackEraser::Handle_mod(const IR & ir) {
     Value b = this->pop();
     Value a = this->pop();
     bool isPopRax = false, isPopRdx = false;
-    if (a != Value(RAX_NUMBER)) {
-        if (this->is_used[RAX_NUMBER]) {
-            this->append({Op_push_reg, Value(RAX_NUMBER)});
+    if (a != Value(rax)) {
+        if (this->isRegUsed(rax)) {
+            this->append({Op_push_reg, Value(rax)});
             isPopRax = true;
         }
-        this->loadToReg(a, Value(RAX_NUMBER));
+        this->loadToReg(a, Value(rax));
     }
-    if (this->is_used[RDX_NUMBER]) {
-        this->append({Op_push_reg, Value(RDX_NUMBER)});
+    if (this->isRegUsed(rdx)) {
+        this->append({Op_push_reg, Value(rdx)});
         isPopRdx = true;
     }
-    this->is_used[RAX_NUMBER] = true;
-    this->is_used[RDX_NUMBER] = true;
+    this->markUsed(rax);
+    this->markUsed(rdx);
     this->append({Op_cqo});
     if (b.isImmediate()) {
         Value b_reg = this->loadToReg(b);
@@ -316,15 +224,15 @@ void StackEraser::Handle_mod(const IR & ir) {
         this->append({Op_idiv_val, b});
     }
     if (isPopRdx) {
-        this->push(this->loadToReg(Value(RDX_NUMBER)));
-        this->append({Op_pop_reg, Value(RDX_NUMBER)});
+        this->push(this->loadToReg(Value(rdx)));
+        this->append({Op_pop_reg, Value(rdx)});
     } else {
-        this->push(Value(RDX_NUMBER));
+        this->push(Value(rdx));
     }
     if (isPopRax) {
-        this->append({Op_pop_reg, Value(RAX_NUMBER)});
+        this->append({Op_pop_reg, Value(rax)});
     } else {
-        this->is_used[RAX_NUMBER] = false;
+        this->releaseReg(rax);
     }
 }
 void StackEraser::Handle_power(const IR & ir) {
@@ -334,7 +242,7 @@ void StackEraser::Handle_power(const IR & ir) {
     this->Handle_callParaBegin({});
     this->push(a);
     this->push(b);
-    this->Handle_call_if({Op_call_if, Value("pow")});
+    this->Handle_call_if({Op_call_if, Value(std::string("pow"))});
 }
 void StackEraser::Handle_conditionJump_addr(const IR & i) {
     IROp op = Op_none;
@@ -351,122 +259,6 @@ void StackEraser::Handle_callParaBegin(const IR & i) {
     (void)i;
     this->push(Value(static_cast<SpecialMark>(FUNCTION_CALL_PARA_HEAD)));
 }
-void StackEraser::Handle_call_if(const IR & i) {
-    std::string func_name = i.val0.getIdVariable().content;
-    SymbolValue func = this->symbol->get(func_name);
-    if (func.isExist == false) {
-        sayError(std::format("`{}` is not exist as a function.", func_name));
-    }
-    if (func.isVariable == true) {
-        sayError(std::format("`{}` is a variable name.", func_name));
-    }
-    // deal with parameters
-    std::vector<Value> parameters; // reverse of real parameters
-    Value para;
-    while (!(para = this->pop()).isParaHead()) {
-        parameters.push_back(para);
-    }
-    //last6.assign(parameters.end() - last6_size, parameters.end());
-    // parameters.erase(parameters.end() - last6_size, parameters.end());
-    // caller save: RAX, RCX, RDX, RSI, RDI, R8-R10 (number 0-7)
-    bool isCallerSave[COMMON_REGS_NUMBER];
-    for (int save_reg = 1;  save_reg < COMMON_REGS_NUMBER;  ++ save_reg) {
-        if (this->is_used[save_reg]) {
-            isCallerSave[save_reg] = true;
-            this->append({Op_push_reg, Value(save_reg)});
-        } else {
-            isCallerSave[save_reg] = false;
-        }
-    }
-
-    int int_count = 0; // to 5 (total 6)
-    int float_count = 0; // to 7 (total 7)
-    bool isCallerSaveFloat[8] = {0};
-    auto origin_para = func.args.begin();
-    for (auto it = parameters.rbegin();  it != parameters.rend();  ++ it) {
-        // check args before use
-        if (origin_para == func.args.end()) {
-            sayError("Too many args");
-            break;
-        }
-        // check the type and choose the suitable register
-        if (this->isFloat(*it)) {
-            if (origin_para->type != TYPE_FLOAT) {
-                sayError("Wrong arg type, should be " + TypeTypeToString(origin_para->type));
-            }
-            Value reg = this->getCallerFloatReg(float_count);
-            int reg_int = reg.getReg();
-            if (this->is_used[reg_int]) {
-                // need to save before use
-                isCallerSaveFloat[float_count] = true;
-                this->append({Op_push_reg, reg});
-            }
-            this->loadToReg(*it, reg);
-            ++ float_count;
-        } else {
-            if (origin_para->type != TYPE_INT) {
-                sayError("Wrong arg type, should be " + TypeTypeToString(origin_para->type));
-            }
-            // int
-            Value reg = this->getCallerReg(int_count);
-            // common regs have been saved now, use them freely!
-            this->loadToReg(*it, reg);
-            ++ int_count;
-        }
-        ++ origin_para;
-        // TODO: limit of 6 and 7
-    }
-    if (origin_para != func.args.end()) {
-        sayError("Too few args");
-    }
-    if (this->is_used[0]) {
-        this->append({Op_push_iv, Value(0)});
-        isCallerSave[0] = true;
-    }
-    /*
-    // deal with register paras
-    int reg_para_count = 0;
-    for (auto it = last6.rbegin(); it != last6.rend(); ++it) {
-        this->loadToReg(*it, this->getCallerReg(reg_para_count), true);
-        reg_para_count ++;
-    }
-    // deal with stack paras
-    for (Value stack_para : parameters) {
-        Value reg = this->loadToReg(stack_para);
-        this->append({Op_push_reg, reg});
-        this->releaseReg(reg);
-    }*/
-    // call func
-    this->append(i);
-    // save regs
-    // save float regs before, the common regs
-    for (int i = 0;  i < 8;  ++ i) {
-        if (isCallerSaveFloat[i]) {
-            this->append({Op_pop_reg, Value(XMM0_NUMBER+i)});
-        }
-    }
-    // common regs
-    for (int save_reg = COMMON_REGS_NUMBER-1;  save_reg > 0;  -- save_reg) {
-        if (isCallerSave[save_reg]) {
-            this->append({Op_pop_reg, Value(save_reg)});
-        }
-    }
-    if (func.type == TYPE_VOID) {
-        if (isCallerSave[RAX_NUMBER]) {
-            this->append({Op_pop_reg, Value(RAX_NUMBER)});
-        }
-        return ;
-    }
-    if (isCallerSave[RAX_NUMBER]) {
-        Value reg = this->getReg();
-        this->append({Op_mov_reg_reg, reg, RAX_NUMBER});
-        this->push(reg);
-        this->append({Op_pop_reg, Value(RAX_NUMBER)});
-    } else {
-        this->push(Value(RAX_NUMBER));
-        this->markUsed(RAX_NUMBER);
-    }
-}
 void StackEraser::Handle_return(const IR & i) {
     (void)i;
     Value v = this->pop();
@@ -480,8 +272,11 @@ void StackEraser::Handle_return(const IR & i) {
 void StackEraser::Handle_sign_sentence_end(const IR & ir) {
     (void)ir;
     this->stack = {};
-    for (int i = 0;  i < ALL_REGS_NUMBER;  i ++) {
-        this->is_used[i] = false;
+    for (auto reg_addr : general_regs) {
+        this->releaseReg(reg_addr);
+    }
+    for (auto reg_addr : xmm_regs) {
+        this->releaseReg(reg_addr);
     }
 }
 void StackEraser::convert() {

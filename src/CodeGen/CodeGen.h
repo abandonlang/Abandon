@@ -37,6 +37,7 @@ class CodeGen {
     void Handle_cqo(const IR & ir);
     void Handle_load_imm_reg(const IR & ir);
     void Handle_load_iv_reg(const IR & ir);
+    void Handle_load_mem_reg(const IR & ir);
     void Handle_store_iv_reg(const IR & ir);
     void Handle_jump_addr(const IR & ir);
     void Handle_jumpIf_addr_reg(const IR & ir);

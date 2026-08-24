@@ -6,36 +6,24 @@
 #include <format>
 #include "../SayError/SayError.h"
 
-std::vector<std::string> regs_string = {
-    "rax", "r10", "r9", "r8", 
-    "rcx", "rdx", "rsi", "rdi",
-    
-    "r11",
-
-    "xmm0", "xmm1", "xmm2", "xmm3", 
-    "xmm4", "xmm5", "xmm6", "xmm7", 
-    "xmm8", "xmm9", "xmm10", "xmm11", 
-    "xmm12", "xmm13", "xmm14", "xmm15"
+std::unordered_map<char*, std::string> low8_map = {
+    {rax, "al"},
+    {rcx, "cl"},
+    {rdx, "dl"},
+    {rbx, "bl"},
+    {rsp, "spl"},
+    {rbp, "bpl"},
+    {rsi, "sil"},
+    {rdi, "dil"},
+    {r8,  "r8b"},
+    {r9,  "r9b"},
+    {r10, "r10b"},
+    {r11, "r11b"},
+    {r12, "r12b"},
+    {r13, "r13b"},
+    {r14, "r14b"},
+    {r15, "r15b"}
 };
-std::vector<std::string> low8_regs_string = {
-    "al", "r10b", "r11b", "r9b", "r8b",
-    "cl", "dl", "rsi", "dil",
-};
-std::string CodeGen::getReg(bool isLow8, int n) {
-    if (n >= 0 && n < COMMON_REGS_NUMBER) {
-        return isLow8?low8_regs_string[n]:regs_string[n];
-    }
-    return regs_string[n];
-}
-inline std::string CodeGen::getReg(bool isLow8, Value reg) {
-    return this->getReg(isLow8, reg.getReg());
-}
-inline std::string CodeGen::getReg(int n) {
-    return this->getReg(false, n);
-}
-std::string CodeGen::getReg(const Value & reg) {
-    return this->getReg(reg.getReg());
-}
 
 CodeGen::CodeGen(IRs * irs, Symbol * symbol) {
     this->irs = irs;
@@ -77,33 +65,25 @@ void CodeGen::Handle_newFunction_iv(const IR & ir) {
     });
     SymbolValue func = this->symbol->get(func_name);
     // rdi, rsi, rdx, rcx, r8, r9
-    int int_regs[] = {
-        RDI_NUMBER, RSI_NUMBER, RDX_NUMBER, 
-        RCX_NUMBER, R8_NUMBER, R9_NUMBER,
-    };
-    int float_regs[] = {
-        XMM0_NUMBER, XMM1_NUMBER, XMM2_NUMBER, XMM3_NUMBER,
-        XMM4_NUMBER, XMM5_NUMBER, XMM6_NUMBER, XMM7_NUMBER,
-    };
-    int int_count = 0;
-    int float_count = 0;
+    auto int_arg = INTEGER_passing.begin();
+    auto float_arg = SSE_passing.begin();
     for (const FunctionArg & arg : func.args) {
         if (arg.type == TYPE_INT) {
             this->symbol->insert_variable(arg.name, TYPE_INT);
             this->append(std::format(
                 "mov {}, {}",
                 this->symbol->get_variable_mem(arg.name),
-                this->getReg(int_regs[int_count])
+                *int_arg
             ));
-            ++ int_count;
+            ++ int_arg;
         } else if (arg.type == TYPE_FLOAT) {
             this->symbol->insert_variable(arg.name, TYPE_FLOAT);
             this->append(std::format(
                 "movsd {}, {}",
                 this->symbol->get_variable_mem(arg.name),
-                this->getReg(float_regs[float_count])
+                *float_arg
             ));
-            ++ float_count;
+            ++ float_arg;
         }
     }
 }
@@ -136,8 +116,7 @@ void CodeGen::Handle_xxx_reg_reg(const IR & ir) {
     std::string opcode;
     switch (ir.op) {
         case Op_mov_reg_reg: {
-            int reg_int = ir.val0.getReg();
-            if (reg_int >= XMM0_NUMBER && reg_int < XMM0_NUMBER + XMM_NUMBER) {
+            if (ir.val0.isRegFloat()) {
                 opcode = "movsd";
             } else {
                 opcode = "mov";
@@ -149,7 +128,7 @@ void CodeGen::Handle_xxx_reg_reg(const IR & ir) {
         case Op_mul_reg_reg: opcode = "imul"; break;
         default: break;
     }
-    this->append(opcode + ' ' + this->getReg(ir.val0) + ", " + this->getReg(ir.val1));
+    this->append(opcode + ' ' + ir.val0.getReg() + ", " + ir.val1.getReg());
 }
 void CodeGen::Handle_xxxsd_reg_reg(const IR & ir) {
     std::string opcode;
@@ -163,13 +142,13 @@ void CodeGen::Handle_xxxsd_reg_reg(const IR & ir) {
     }
     this->append(std::format("{}sd {}, {}",
         opcode,
-        this->getReg(ir.val0),
-        this->getReg(ir.val1)
+        ir.val0.getReg(),
+        ir.val1.getReg()
     ));
 }
 void CodeGen::Handle_idiv_val(const IR & ir) {
     if (ir.val0.isReg()) {
-        this->append("idiv " + this->getReg(ir.val0));
+        this->append(std::string("idiv ") + ir.val0.getReg());
     } else if (ir.val0.isImmediate()) {
         this->append("idiv " + ir.val0.getImmediate().content);
     } else if (ir.val0.isVariable()) {
@@ -191,7 +170,7 @@ void CodeGen::Handle_load_imm_reg(const IR & ir) {
     }
     this->append(std::format("{} {}, {}",
         opcode,
-        this->getReg(ir.val1),
+        ir.val1.getReg(),
         this->literal.get(ir.val0)
     ));
 }
@@ -204,9 +183,16 @@ void CodeGen::Handle_load_iv_reg(const IR & ir) {
     }
     this->append(std::format("{} {}, {}",
         opcode,
-        this->getReg(ir.val1),
+        ir.val1.getReg(),
         this->symbol->get_variable_mem(ir.val0))
     );
+}
+void CodeGen::Handle_load_mem_reg(const IR & ir) {
+    this->append(
+        std::format("mov {}, [rsp + {}]",
+            ir.val1.getReg(),
+            ir.val0.getMem()
+    ));
 }
 void CodeGen::Handle_store_iv_reg(const IR & ir) {
     std::string opcode;
@@ -218,25 +204,25 @@ void CodeGen::Handle_store_iv_reg(const IR & ir) {
     this->append(std::format("{} {},{}",
         opcode,
         this->symbol->get_variable_mem(ir.val0),
-        this->getReg(ir.val1)
+        ir.val1.getReg()
     ));
 }
 void CodeGen::Handle_jump_addr(const IR & ir) {
     this->append("jmp L" + std::to_string(this->irs->marks[ir.get_addr().line]));
 }
 void CodeGen::Handle_jumpIf_addr_reg(const IR & ir) {
-    this->append("test " + this->getReg(ir.val0) + ", " + this->getReg(ir.val0));
+    this->append(std::string("test ") + ir.val0.getReg() + ", " + ir.val0.getReg());
     this->append("jne L" + std::to_string(this->irs->marks[ir.get_addr().line]));
 }
 void CodeGen::Handle_jumpIfNot_addr_reg(const IR & ir) {
-    this->append("test " + this->getReg(ir.val0) + ", " + this->getReg(ir.val0));
+    this->append(std::string("test ") + ir.val0.getReg() + ", " + ir.val0.getReg());
     this->append("je L" + std::to_string(this->irs->marks[ir.get_addr().line]));
 }
 void CodeGen::Handle_compare_reg_reg(const IR & ir) {
     std::string opcode;
-    std::string reg0 = this->getReg(ir.val0);
-    std::string reg1 = this->getReg(ir.val1);
-    std::string low8_reg0 = this->getReg(true, ir.val0);
+    std::string reg0 = ir.val0.getReg();
+    std::string reg1 = ir.val1.getReg();
+    std::string low8_reg0 = low8_map[ir.val0.getReg()];
     switch (ir.op) {
         case Op_equal_reg_reg: opcode = "sete"; break;
         case Op_bigger_reg_reg: opcode = "setg"; break;
@@ -257,10 +243,10 @@ void CodeGen::Handle_push_iv(const IR & ir) {
     this->append("push " + this->symbol->get_variable_mem(ir.val0));
 }
 void CodeGen::Handle_push_reg(const IR & ir) {
-    this->append("push " + this->getReg(ir.val0));
+    this->append(std::string("push ") + ir.val0.getReg());
 }
 void CodeGen::Handle_pop_reg(const IR & ir) {
-    this->append("pop " + this->getReg(ir.val0));
+    this->append(std::string("pop ") + ir.val0.getReg());
 }
 void CodeGen::Handle_pop_iv(const IR & ir) {
     this->append("pop " + this->symbol->get_variable_mem(ir.val0));
@@ -278,8 +264,8 @@ void CodeGen::Handle_return_imm(const IR & ir) {
     this->append("ret");
 }
 void CodeGen::Handle_return_reg(const IR & ir) {
-    if (ir.val0.getReg() != RAX_NUMBER) {
-        this->append("mov rax, " + this->getReg(ir.val0));
+    if (ir.val0.getReg() != rax) {
+        this->append(std::string("mov rax, ") + ir.val0.getReg());
     }
     this->append("leave");
     this->append("ret");
@@ -299,7 +285,7 @@ void CodeGen::Handle_decrement_iv(const IR & ir) {
 void CodeGen::Handle_neg_reg(const IR & ir) {
     this->append(std::format(
         "neg {}",
-        this->getReg(ir.val0)
+        ir.val0.getReg()
     ));
 }
 
@@ -323,6 +309,7 @@ void CodeGen::generate() {
         {Op_divsd_reg_reg, &CodeGen::Handle_xxxsd_reg_reg},
         {Op_load_imm_reg, &CodeGen::Handle_load_imm_reg},
         {Op_load_iv_reg, &CodeGen::Handle_load_iv_reg},
+        {Op_load_mem_reg, &CodeGen::Handle_load_mem_reg},
         {Op_store_iv_reg, &CodeGen::Handle_store_iv_reg},
         {Op_jump_addr, &CodeGen::Handle_jump_addr},
         {Op_jumpIf_addr_reg, &CodeGen::Handle_jumpIf_addr_reg},

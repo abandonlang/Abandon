@@ -95,6 +95,7 @@ enum IROp {
     
     Op_load_iv_reg,
     Op_load_imm_reg,
+    Op_load_mem_reg, // mov reg, [rsp + backup_offset]
     Op_store_iv_reg,
 
     Sign_newFunction_iv, // iv is the name

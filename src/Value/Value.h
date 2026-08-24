@@ -45,7 +45,8 @@ class Value {
         std::monostate, 
         Immediate,    // immediate
         IdVariable,   // iv, if
-        int,          // reg number
+        char*,        // reg string address
+        int,          // mem offset
         TypeType,     // tags of a type
         SpecialMark
     > data_;
@@ -55,7 +56,8 @@ class Value {
     Value(const Immediate & imm);
     Value(const std::string & iv_name);
     Value(const IdVariable & iv);
-    Value(const int & reg);
+    Value(char * reg);
+    Value(int offset);
     Value(const TypeType & type);
     Value(const SpecialMark & spm);
     ~Value() = default;
@@ -72,8 +74,11 @@ class Value {
     bool isParaHead() const;
     const Immediate& getImmediate() const;
     const IdVariable& getIdVariable() const;
-    const int& getReg() const;
+    char* getReg() const;
+    int getMem() const;
     const TypeType& getType() const;
+
+    bool isRegFloat() const;
     #ifdef DEBUG
     std::string toString() const ;
     #endif

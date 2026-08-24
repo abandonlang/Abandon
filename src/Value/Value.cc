@@ -44,8 +44,11 @@ Value::Value(const std::string & iv_name) {
 Value::Value(const IdVariable & iv) {
     this->data_ = iv;
 }
-Value::Value(const int & reg) {
+Value::Value(char * reg) {
     this->data_ = reg;
+}
+Value::Value(int offset) {
+    this->data_ = offset;
 }
 Value::Value(const TypeType & type) {
     this->data_ = type;
@@ -81,10 +84,11 @@ bool Value::operator==(const Value & o) {
         auto you = std::get<IdVariable>(o.data_);
         return me.content == you.content;
     }
-    if (std::holds_alternative<int>(data_)) {
-        auto me = std::get<int>(data_);
-        auto you = std::get<int>(o.data_);
+    if (std::holds_alternative<char*>(data_)) {
+        auto me = std::get<char*>(data_);
+        auto you = std::get<char*>(o.data_);
         return me == you;
+        // the address has the fixed value
     }
     if (std::holds_alternative<TypeType>(data_)) {
         auto me = std::get<TypeType>(data_);
@@ -103,7 +107,7 @@ bool Value::isImmediate() const {
     return std::holds_alternative<Immediate>(data_);
 }
 bool Value::isReg() const {
-    return std::holds_alternative<int>(data_);
+    return std::holds_alternative<char*>(data_);
 }
 bool Value::isParaHead() const {
     if (!std::holds_alternative<SpecialMark>(data_)) {
@@ -117,14 +121,24 @@ const Immediate& Value::getImmediate() const {
 const IdVariable& Value::getIdVariable() const {
     return std::get<IdVariable>(data_);
 }
-const int& Value::getReg() const {
+char* Value::getReg() const {
+    return std::get<char*>(data_);
+}
+int Value::getMem() const {
     return std::get<int>(data_);
 }
 const TypeType& Value::getType() const {
     return std::get<TypeType>(data_);
 }
 
+bool Value::isRegFloat() const {
+    if (!this->isReg()) return false;
+    char * reg_addr = this->getReg();
+    return reg_addr[0] == 'x' && reg_addr[1] == 'm' && reg_addr[2] == 'm';
+}
+
 #ifdef DEBUG
+#include <format>
 std::string Value::toString() const {
     if (std::holds_alternative<Immediate>(data_)) {
         auto me = std::get<Immediate>(data_);
@@ -134,9 +148,13 @@ std::string Value::toString() const {
         auto me = std::get<IdVariable>(data_);
         return me.content;
     }
+    if (std::holds_alternative<char*>(data_)) {
+        auto me = std::get<char*>(data_);
+        return me;
+    }
     if (std::holds_alternative<int>(data_)) {
         auto me = std::get<int>(data_);
-        return std::to_string(me);
+        return std::format("[rsp+{}]", me);
     }
     return std::string();
 }

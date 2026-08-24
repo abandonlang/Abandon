@@ -6,12 +6,12 @@ Stack Eraser is used to convert a stack-IR to non-stack-IR
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <array>
 #include "../IR/IR.h"
 #include "../Value/Value.h"
 #include "../Symbol/Symbol.h"
 #include "../env_config/config.h"
 
-#define ALL_REGS_NUMBER (COMMON_REGS_NUMBER+1+XMM_NUMBER)
 class StackEraser {
     private:
     std::unordered_map<int, int> lineCast; // (line number) old IR -> new IR
@@ -20,23 +20,32 @@ class StackEraser {
     Symbol * symbol;
     std::vector<Value> stack;
     int n;
-    bool is_used[ALL_REGS_NUMBER]; // `1`(R11) is just to stay and do not use
-    std::unordered_set<int> stack_used; // stand for the real memory stack
+    std::unordered_map<char*, bool> regs_state; // reg-string-address --> is-used
+    std::unordered_set<int> stack_used; // stand for the real memory stack (???)
+    
+    inline bool isStackUsed(int n); // n is a negative
+    int getStack();
+    void releaseStack(int n);
+
+    // reg_manager
+    bool isRegUsed(char * reg_addr);
     bool isFloat(Value val) const;
-    void markUsed(int n);
+    void markUsed(char * reg_addr);
     Value getReg(); // for integer
     Value getFloatReg();
     Value getReg(Value from);
-    Value getCallerReg(int number);
-    Value getCallerFloatReg(int number);
     void releaseReg(Value reg);
     Value loadToReg(Value t);
     Value loadToReg(Value t, Value reg);
     Value loadToReg(Value t, Value reg, bool isMustToReg);
-    inline bool isStackUsed(int n); // n is a negative
-    int getStack();
-    void releaseStack(int n);
+
+    std::vector<char*> protected_reg_list;
+    void protectReg(char * reg_addr); // abstract of push/pop
+    void restoreRegs();               // abstract of push/pop
+
+    void evacuateReg(char * reg_addr);
     
+    // handle stack-based IR
     void Handle_pop_iv(const IR & ir);
     void Handle_push_imm(const IR & ir);
     void Handle_push_iv(const IR & ir);
@@ -63,6 +72,5 @@ class StackEraser {
     void replaceLineNumber();
     // ~StackEraser();
 };
-
 
 #endif
