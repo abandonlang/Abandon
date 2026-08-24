@@ -59,6 +59,8 @@ void StackEraser::Handle_call_if(const IR & i) {
         ++ it;
     }
     // TODO: float passing
+    // call
+    this->append({Op_call_if, func_name});
     // end
     this->restoreRegs();
     if (this->isRegUsed(rax)) {
