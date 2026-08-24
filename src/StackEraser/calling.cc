@@ -21,6 +21,10 @@ void StackEraser::Handle_call_if(const IR & i) {
     while (!(para = this->pop()).isParaHead()) {
         parameters.push_back(para);
     }
+    // save rax
+    if (this->isRegUsed(rax)) {
+        this->evacuateReg(rax);
+    }
     // caller save
     int save_count = 0;
     std::unordered_map<char*, int> offsets;// reg --> offset of save_count
@@ -63,10 +67,8 @@ void StackEraser::Handle_call_if(const IR & i) {
     this->append({Op_call_if, func_name});
     // end
     this->restoreRegs();
-    if (this->isRegUsed(rax)) {
-        this->evacuateReg(rax);
-    }
     this->push(rax);
+    this->markUsed(rax);
     // TODO: para check
 }
 

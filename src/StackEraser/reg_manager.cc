@@ -103,7 +103,7 @@ void StackEraser::restoreRegs() {
 }
 
 void StackEraser::evacuateReg(char * reg_addr) {
-    Value new_ = loadToReg(reg_addr);
+    Value new_ = loadToReg(reg_addr, this->getReg(), true);
     for (auto it = this->stack.begin(); it != this->stack.end(); ++ it) {
         if (*it == Value(reg_addr)) {
             *it = new_;
