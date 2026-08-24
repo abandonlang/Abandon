@@ -1,6 +1,6 @@
 CC := g++
 STD := -std=c++20
-DEBUG := -g -DDEBUG
+DEBUG := -g -DDEBUG -fsanitize=address
 WARNINGS := -Wall -Wextra -Wpedantic
 
 SRC_FILES := $(wildcard src/*.cc src/*/*.cc)
