@@ -1,8 +1,133 @@
+// 多参数函数
+fn int add(int a, int b) {
+    print(1000);  // 标记进入 add
+    return a + b;
+}
+
+// 递归函数
+fn int fib(int n) {
+    print(2000);  // 标记进入 fib
+    if n <= 1 {
+        return n;
+    } else {
+        return fib(n - 1) + fib(n - 2);
+    }
+}
+
 fn int main(void) {
-    int x;
-    int y;
-    x = input();
-    y = input();
-    print(x+y);
+    int a;
+    int b;
+    int c;
+    int d;
+    int i;
+    
+    // 基本算术：+ - * / %
+    print(1);
+    a = 10;
+    b = 3;
+    c = a + b;
+    print(c);      // 13
+    c = a - b;
+    print(c);      // 7
+    c = a * b;
+    print(c);      // 30
+    c = a / b;
+    print(c);      // 3
+    c = a % b;
+    print(c);      // 1
+    
+    // 幂运算
+    print(2);
+    d = 2 ** 3;
+    print(d);      // 8
+    
+    // 前缀操作 ++ -- **
+    print(3);
+    ++a;
+    print(a);      // 11
+    --b;
+    print(b);      // 2
+    **d;
+    print(d);      // 64 (8*8)
+    
+    // 复合赋值
+    print(4);
+    a += 5;
+    print(a);      // 16
+    b -= 2;
+    print(b);      // 0
+    c *= 3;
+    print(c);      // 3
+    a /= 2;
+    print(a);      // 8
+    
+    // 一元负号
+    print(5);
+    c = -a;
+    print(c);      // -8
+    
+    // 比较和嵌套 if/else
+    print(6);
+    a = 15;
+    if a > 0 {
+        print(61);
+        if a == 15 {
+            print(611);
+            c = 1;
+        } else {
+            print(612);
+            c = 0;
+        }
+    } else {
+        print(62);
+        c = -1;
+    }
+    print(c);      // 1
+    
+    // while + break + continue
+    print(7);
+    a = 10;
+    while a > 0 {
+        a = a - 1;
+        if a == 5 {
+            print(71);  // 跳过打印 a=5
+            continue;
+        }
+        if a == 2 {
+            print(72);  // 遇到 a=2 时跳出
+            break;
+        }
+        print(a);
+    }
+    
+    // do-while
+    print(8);
+    b = 0;
+    do {
+        b = b + 1;
+        print(b);
+    } while b < 3;
+    
+    // for 循环
+    print(9);
+    for (i = 0; i < 3; i = i + 1) {
+        print(i);
+    }
+    
+    // 多参数函数调用
+    print(10);
+    c = add(3, 4);
+    print(c);      // 7
+    
+    // 递归调用
+    print(11);
+    c = fib(6);
+    print(c);      // 8
+    
+    // 输入输出
+    print(12);
+    a = input();
+    print(a);
+    
     return 0;
 }
