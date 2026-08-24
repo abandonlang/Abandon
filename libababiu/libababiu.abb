@@ -1,6 +1,7 @@
 // io
 fn extern void print(int n);
 fn extern int input(void);
+fn extern void print_float(float n);
 
 // math
 fn extern int pow(int x, int y); // x ** y

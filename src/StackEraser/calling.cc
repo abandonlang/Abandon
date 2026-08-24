@@ -52,17 +52,31 @@ void StackEraser::Handle_call_if(const IR & i) {
     std::reverse(MEMORY.begin(), MEMORY.end());
     // Parameters Passing
     // INTEGER passing
-    auto it = INTEGER_passing.begin();
-    for (auto p : INTEGER) {
-        if (p.isReg() && std::ranges::find(INTEGER_passing, p.getReg()) != INTEGER_passing.end()) {
-            // load from stack
-            this->append({Op_load_mem_reg, Value(save_count+offsets.at(p.getReg())), *it});
-        } else {
-            this->loadToReg(p, *it, true);
+    {
+        auto it = INTEGER_passing.begin();
+        for (auto p : INTEGER) {
+            if (p.isReg() && std::ranges::find(INTEGER_passing, p.getReg()) != INTEGER_passing.end()) {
+                // load from stack
+                this->append({Op_load_mem_reg, Value(save_count+offsets.at(p.getReg())), *it});
+            } else {
+                this->loadToReg(p, *it, true);
+            }
+            ++ it;
         }
-        ++ it;
     }
-    // TODO: float passing
+    // SSE passing
+    {
+        auto it = SSE_passing.begin();
+        for (auto p : SSE) {
+            if (p.isReg() && std::ranges::find(SSE_passing, p.getReg()) != SSE_passing.end()) {
+                // load from stack
+                this->append({Op_load_mem_reg, Value(save_count+offsets.at(p.getReg())), *it});
+            } else {
+                this->loadToReg(p, *it, true);
+            }
+            ++ it;
+        }
+    }
     // call
     this->append({Op_call_if, func_name});
     // end

@@ -40,7 +40,8 @@ std::string CodeGen::get_output() {
             "section .text\n"
             "extern print\n"
             "extern input\n"
-            "extern pow\n";
+            "extern pow\n"
+            "extern print_float\n";
     for (FuncData & _o : this->_output) {
         ret += std::format(
             "\n"
@@ -188,8 +189,13 @@ void CodeGen::Handle_load_iv_reg(const IR & ir) {
     );
 }
 void CodeGen::Handle_load_mem_reg(const IR & ir) {
+    std::string post = "";
+    if (ir.val1.isRegFloat()) {
+        post = "sd";
+    }
     this->append(
-        std::format("mov {}, [rsp + {}]",
+        std::format("mov{} {}, [rsp + {}]",
+            post,
             ir.val1.getReg(),
             ir.val0.getMem()
     ));
@@ -243,10 +249,26 @@ void CodeGen::Handle_push_iv(const IR & ir) {
     this->append("push " + this->symbol->get_variable_mem(ir.val0));
 }
 void CodeGen::Handle_push_reg(const IR & ir) {
-    this->append(std::string("push ") + ir.val0.getReg());
+    if (ir.val0.isRegFloat()) {
+        this->append(std::format(
+            "sub rsp, 16\n"
+            "movsd [rsp], {}",
+            ir.val0.getReg()
+        ));
+    } else {
+        this->append(std::string("push ") + ir.val0.getReg());
+    }
 }
 void CodeGen::Handle_pop_reg(const IR & ir) {
-    this->append(std::string("pop ") + ir.val0.getReg());
+    if (ir.val0.isRegFloat()) {
+        this->append(std::format(
+            "movsd {}, [rsp]\n"
+            "add rsp, 16",
+            ir.val0.getReg()
+        ));
+    } else {
+        this->append(std::string("pop ") + ir.val0.getReg());
+    }
 }
 void CodeGen::Handle_pop_iv(const IR & ir) {
     this->append("pop " + this->symbol->get_variable_mem(ir.val0));
