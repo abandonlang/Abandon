@@ -19,7 +19,7 @@ int IRs::getPosition() {
 
 int IRs::add(IR ir) {
     int pos = this->getPosition();
-    content.push_back(std::move(ir));
+    this->content.push_back(std::move(ir));
     return pos;
 }
 
@@ -99,6 +99,7 @@ std::string IROpToText(IROp n) {
         case Op_negative: return "negative";
         case Op_neg_reg: return "neg_reg";
         case Op_load_mem_reg: return "load_mem_reg";
+        case Op_return_with_nothing: return "return_with_nothing";
     }
     return "Error: IR.cc::IRs::display();\n";
 }

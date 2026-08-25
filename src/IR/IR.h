@@ -79,6 +79,7 @@ enum IROp {
 
     // Other
     Op_return, // return (~0)
+    Op_return_with_nothing,
     Op_return_imm,
     Op_return_reg,
 

@@ -276,6 +276,11 @@ void CodeGen::Handle_pop_iv(const IR & ir) {
 void CodeGen::Handle_call_if(const IR & ir) {
     this->append("call " + ir.val0.getIdVariable().content);
 }
+void CodeGen::Handle_return_with_nothing(const IR & ir) {
+    (void)ir;
+    this->append("leave");
+    this->append("ret");
+}
 void CodeGen::Handle_return_imm(const IR & ir) {
     if (ir.val0.getImmediate().content == "0") {
         this->append("xor rax, rax");
@@ -348,6 +353,7 @@ void CodeGen::generate() {
         {Op_pop_reg, &CodeGen::Handle_pop_reg},
         {Op_pop_iv, &CodeGen::Handle_pop_iv},
         {Op_call_if, &CodeGen::Handle_call_if},
+        {Op_return_with_nothing, &CodeGen::Handle_return_with_nothing},
         {Op_return_imm, &CodeGen::Handle_return_imm},
         {Op_return_reg, &CodeGen::Handle_return_reg},
         {Op_increment_iv, &CodeGen::Handle_increment_iv},

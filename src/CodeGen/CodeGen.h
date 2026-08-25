@@ -49,6 +49,7 @@ class CodeGen {
     void Handle_pop_reg(const IR & ir);
     void Handle_pop_iv(const IR & ir);
     void Handle_call_if(const IR & ir);
+    void Handle_return_with_nothing(const IR & ir);
     void Handle_return_imm(const IR & ir);
     void Handle_return_reg(const IR & ir);
     void Handle_increment_iv(const IR & ir);

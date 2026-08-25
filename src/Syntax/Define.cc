@@ -52,5 +52,11 @@ void Syntax::analyze_DefineFunction(Tree * tr) {
     this->append({Sign_newFunction_iv, func_name});
     //this->analyze_DefineVariableList(tr->children[2]);
     this->analyze_Statements(tr->children[3]);
+    // check if has return sentence
+    if (this->irs->content.empty() 
+    || this->irs->content.back().op != Op_return_with_nothing 
+    || this->irs->content.back().op != Op_return) {
+        this->append({Op_return_with_nothing});
+    }
     this->append({Sign_endFunction});
 }
