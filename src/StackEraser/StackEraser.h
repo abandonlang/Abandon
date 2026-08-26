@@ -27,6 +27,8 @@ class StackEraser {
     int getStack();
     void releaseStack(int n);
 
+    TypeType getValueType(Value & val) const; // here, `ValueType` is calculated
+
     // reg_manager
     bool isRegUsed(char * reg_addr);
     bool isFloat(Value val) const;
@@ -60,7 +62,8 @@ class StackEraser {
     void Handle_call_if(const IR & ir);
     void Handle_return(const IR & ir);
     void Handle_sign_sentence_end(const IR & ir);
-    
+    void Handle_sign_newFunction_iv(const IR & ir);
+    void Handle_sign_endFunction(const IR & ir);
 
     public:
     Value pop();

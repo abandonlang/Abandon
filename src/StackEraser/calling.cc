@@ -21,6 +21,21 @@ void StackEraser::Handle_call_if(const IR & i) {
     while (!(para = this->pop()).isParaHead()) {
         parameters.push_back(para);
     }
+    // check types of argument
+    auto origin_para = func.args.begin();
+    for (auto it = parameters.rbegin();  it != parameters.rend();  ++ it) {
+        if (origin_para == func.args.end()) {
+            sayError("Too many args");
+            break;
+        }
+        if (origin_para->type != this->getValueType(*it)) {
+            sayError(std::format(
+                "Wrong arg type, you used `{}`. But should be `{}`.",
+                TypeTypeToString(this->getValueType(*it)),
+                TypeTypeToString(origin_para->type)));
+        }
+        ++ origin_para;
+    }
     // save rax
     if (this->isRegUsed(rax)) {
         this->evacuateReg(rax);
@@ -83,6 +98,5 @@ void StackEraser::Handle_call_if(const IR & i) {
     this->restoreRegs();
     this->push(rax);
     this->markUsed(rax);
-    // TODO: para check
 }
 

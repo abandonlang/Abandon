@@ -11,21 +11,6 @@ bool StackEraser::isRegUsed(char * reg_addr) {
     return false;
 }
 
-bool StackEraser::isFloat(Value val) const {
-    if (val.isImmediate()) {
-        return val.getImmediate().type == TYPE_FLOAT;
-    }
-    if (val.isReg()) {
-        return val.isRegFloat();
-    }
-    if (val.isVariable()) {
-        std::string var_name = val.getIdVariable().content;
-        SymbolValue sv = this->symbol->get_variable(var_name);
-        return sv.isExist && sv.isVariable && sv.type == TYPE_FLOAT;
-    }
-    return false;
-}
-
 void StackEraser::markUsed(char * reg_addr) {
     this->regs_state.insert_or_assign(reg_addr, true);
 }

@@ -32,6 +32,39 @@ void StackEraser::releaseStack(int n){
     }
 }
 
+
+bool StackEraser::isFloat(Value val) const {
+    if (val.isImmediate()) {
+        return val.getImmediate().type == TYPE_FLOAT;
+    }
+    if (val.isReg()) {
+        return val.isRegFloat();
+    }
+    if (val.isVariable()) {
+        std::string var_name = val.getIdVariable().content;
+        SymbolValue sv = this->symbol->get_variable(var_name);
+        return sv.isExist && sv.isVariable && sv.type == TYPE_FLOAT;
+    }
+    return false;
+}
+
+TypeType StackEraser::getValueType(Value & val) const {
+    if (val.isImmediate()) {
+        return val.getImmediate().type;
+    }
+    if (val.isReg()) {
+        // TODO: string value
+        if (val.isRegFloat()) return TYPE_FLOAT;
+        else return TYPE_INT;
+    }
+    if (val.isVariable()) {
+        auto var = this->symbol->get_variable(val.getIdVariable().content);
+        return var.type;
+    }
+    return TYPE_UNKNOWN;
+}
+
+
 StackEraser::~StackEraser() {
     delete this->irs;
 }
@@ -279,6 +312,18 @@ void StackEraser::Handle_sign_sentence_end(const IR & ir) {
         this->releaseReg(reg_addr);
     }
 }
+void StackEraser::Handle_sign_newFunction_iv(const IR & ir) {
+    this->append(ir);
+    this->symbol->new_scope();
+    SymbolValue func = this->symbol->get(ir.val0.getIdVariable().content);
+    for (auto arg : func.args) {
+        this->symbol->insert_variable(arg.name, arg.type);
+    }
+}
+void StackEraser::Handle_sign_endFunction(const IR & ir) {
+    this->append(ir);
+    this->symbol->exit_scope();
+}
 void StackEraser::convert() {
     n = 0; // this->n
     #ifdef DEBUG
@@ -312,6 +357,8 @@ void StackEraser::convert() {
         {Op_call_if, &StackEraser::Handle_call_if},
         {Op_return, &StackEraser::Handle_return},
         {Sign_SentenceEnd, &StackEraser::Handle_sign_sentence_end},
+        {Sign_newFunction_iv, &StackEraser::Handle_sign_newFunction_iv},
+        {Sign_endFunction, &StackEraser::Handle_sign_endFunction},
     };
     for (IR i : this->old->content) {
         this->lineCast.insert({n, this->irs->pos});

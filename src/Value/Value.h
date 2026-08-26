@@ -76,7 +76,7 @@ class Value {
     const IdVariable& getIdVariable() const;
     char* getReg() const;
     int getMem() const;
-    const TypeType& getType() const;
+    const TypeType& getType() const; // here, `type` is a value
 
     bool isRegFloat() const;
     #ifdef DEBUG
