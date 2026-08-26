@@ -25,7 +25,7 @@ Token Lexer::signToken() {
             break;
         case signStateWrong:
             return tk;
-        case signStateCommit:
+        case signStateComment:
             return this->getNextToken();
     }
 
@@ -59,7 +59,7 @@ enum signState Lexer::isSignTwoChars(char a, char b) {
                 case '=': return signStateRight;
                 case '/': // comment
                     this->file->skipToNextLine();
-                    return signStateCommit;
+                    return signStateComment;
                 default: return signStateWrong;
             }
         case '^':

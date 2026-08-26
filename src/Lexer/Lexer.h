@@ -7,7 +7,7 @@
 enum signState {
     signStateRight,
     signStateWrong,
-    signStateCommit
+    signStateComment
 };
 
 class Lexer {
