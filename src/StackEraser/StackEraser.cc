@@ -324,6 +324,12 @@ void StackEraser::Handle_sign_endFunction(const IR & ir) {
     this->append(ir);
     this->symbol->exit_scope();
 }
+void StackEraser::Handle_sign_defineVariable_type_iv(const IR & ir) {
+    this->append(ir);
+    TypeType var_type = ir.val0.getType();
+    std::string var_name = ir.val1.getIdVariable().content;
+    this->symbol->insert_variable(var_name, var_type);
+}
 void StackEraser::convert() {
     n = 0; // this->n
     #ifdef DEBUG
@@ -359,6 +365,7 @@ void StackEraser::convert() {
         {Sign_SentenceEnd, &StackEraser::Handle_sign_sentence_end},
         {Sign_newFunction_iv, &StackEraser::Handle_sign_newFunction_iv},
         {Sign_endFunction, &StackEraser::Handle_sign_endFunction},
+        {Sign_defineVariable_type_iv, &StackEraser::Handle_sign_defineVariable_type_iv},
     };
     for (IR i : this->old->content) {
         this->lineCast.insert({n, this->irs->pos});

@@ -1,0 +1,6 @@
+fn int main() {
+    int x;
+    x = 12;
+    print(x);
+    return 0;
+}

@@ -64,6 +64,7 @@ class StackEraser {
     void Handle_sign_sentence_end(const IR & ir);
     void Handle_sign_newFunction_iv(const IR & ir);
     void Handle_sign_endFunction(const IR & ir);
+    void Handle_sign_defineVariable_type_iv(const IR & ir);
 
     public:
     Value pop();

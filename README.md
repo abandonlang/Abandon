@@ -15,7 +15,6 @@ make
 > 咱要把生成的 `ababiu` 文件挪到主目录下(即和 libababiu/ 目录同级), 因为它会用到一些 libababiu 的内容.  
 
 ## 该编译你的代码了
-(有一个测试文件 `test.abb`, 咱可以试试)  
 ```bash
 ./ababiu your_code.abb -o output --auto
 ```
@@ -32,3 +31,4 @@ ld a.o -o output -L. -lc -lababiu -dynamic-linker /lib64/ld-linux-x86-64.so.2 # 
 ## File
 `src/` 是放编译器代码的地方.  
 `libababiu/` 是放 ababiu 的 built-in 函数的地方.  
+这里有两个供测试的文件，其中 `test.abb` 用来展示语法，`commit.abb` 用来展示当前 commit 添加或修复的内容.  
