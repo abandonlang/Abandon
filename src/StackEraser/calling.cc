@@ -29,7 +29,7 @@ void StackEraser::Handle_call_if(const IR & i) {
             break;
         }
         if (origin_para->type != this->getValueType(*it)) {
-            sayError(std::format(
+            sayWarning(std::format(
                 "Wrong arg type, you used `{}`. But should be `{}`.",
                 TypeTypeToString(this->getValueType(*it)),
                 TypeTypeToString(origin_para->type)));

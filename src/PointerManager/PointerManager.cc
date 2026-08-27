@@ -15,7 +15,7 @@ void PointerManager<T>::free() {
     for (auto ptr : this->ptrs) {
         if (ptr != nullptr) {
             delete ptr;
-            count ++;
+            ++ count;
             ptr = nullptr;
         }
     }
