@@ -1,7 +1,7 @@
 #ifndef _AUTOASSIGN_H_
 #define _AUTOASSIGN_H_
-#include "../IR/IR.h"
-#include "../Value/Value.h"
+#include "../../IR/IR.h"
+#include "../../Value/Value.h"
 #include <vector>
 #include <utility>
 

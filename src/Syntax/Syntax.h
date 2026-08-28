@@ -2,7 +2,7 @@
 #define _SYNTAX_H_
 #include "../IR/IR.h"
 #include "../Tree/Tree.h"
-#include "../AutoAssign/AutoAssign.h"
+#include "AutoAssign/AutoAssign.h"
 #include "../Value/Value.h"
 #include "../Symbol/Symbol.h"
 
