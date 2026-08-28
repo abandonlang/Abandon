@@ -20,13 +20,13 @@ struct Immediate {
 
 TypeType getImmediateType(const Immediate& imm) ;
 
-struct IdVariable {
+struct Variable {
     std::string content;
 };
 
 Immediate makeImmediate(TypeType type, std::string s);
 Immediate makeImmediate(int i);
-IdVariable makeIdVariable(std::string content);
+Variable makeVariable(std::string content);
 
 enum SpecialMark {
     FUNCTION_CALL_PARA_HEAD,
@@ -44,7 +44,7 @@ class Value {
     std::variant<
         std::monostate, 
         Immediate,    // immediate
-        IdVariable,   // iv, if
+        Variable,   // iv, if
         char*,        // reg string address
         int,          // mem offset
         TypeType,     // tags of a type
@@ -55,7 +55,7 @@ class Value {
     Value(const Value & o) = default;
     Value(const Immediate & imm);
     Value(const std::string & iv_name);
-    Value(const IdVariable & iv);
+    Value(const Variable & iv);
     Value(char * reg);
     Value(int offset);
     Value(const TypeType & type);
@@ -63,7 +63,7 @@ class Value {
     ~Value() = default;
     Value& operator=(const Value & o) = default;
     Value& operator=(const Immediate & o);
-    Value& operator=(const IdVariable & o);
+    Value& operator=(const Variable & o);
     Value& operator=(const std::string & o);
     bool operator==(const Value & o);
     bool operator!=(const Value & o);
@@ -73,7 +73,7 @@ class Value {
     bool isReg() const;
     bool isParaHead() const;
     const Immediate& getImmediate() const;
-    const IdVariable& getIdVariable() const;
+    const Variable& getVariable() const;
     char* getReg() const;
     int getMem() const;
     const TypeType& getType() const; // here, `type` is a value

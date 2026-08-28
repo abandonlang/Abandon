@@ -28,8 +28,8 @@ Immediate makeImmediate(int i) {
     return makeImmediate(TYPE_INT,  std::to_string(i));
 }
 
-IdVariable makeIdVariable(std::string content) {
-    IdVariable iv;
+Variable makeVariable(std::string content) {
+    Variable iv;
     iv.content = content;
     return iv;
 }
@@ -39,9 +39,9 @@ Value::Value(const Immediate & imm) {
     this->data_ = imm;
 }
 Value::Value(const std::string & iv_name) {
-    this->data_ = makeIdVariable(iv_name);
+    this->data_ = makeVariable(iv_name);
 }
-Value::Value(const IdVariable & iv) {
+Value::Value(const Variable & iv) {
     this->data_ = iv;
 }
 Value::Value(char * reg) {
@@ -61,13 +61,13 @@ Value& Value::operator=(const Immediate & o) {
     return *this;
 }
 
-Value& Value::operator=(const IdVariable & o) {
+Value& Value::operator=(const Variable & o) {
     this->data_ = o;
     return *this;
 }
 
 Value& Value::operator=(const std::string & o) {
-    this->data_ = makeIdVariable(o);
+    this->data_ = makeVariable(o);
     return *this;
 }
 bool Value::operator==(const Value & o) {
@@ -79,9 +79,9 @@ bool Value::operator==(const Value & o) {
         auto you = std::get<Immediate>(o.data_);
         return me.type == you.type && me.content == you.content;
     }
-    if (std::holds_alternative<IdVariable>(data_)) {
-        auto me = std::get<IdVariable>(data_);
-        auto you = std::get<IdVariable>(o.data_);
+    if (std::holds_alternative<Variable>(data_)) {
+        auto me = std::get<Variable>(data_);
+        auto you = std::get<Variable>(o.data_);
         return me.content == you.content;
     }
     if (std::holds_alternative<char*>(data_)) {
@@ -101,7 +101,7 @@ bool Value::operator!=(const Value & o) {
     return !this->operator==(o);
 }
 bool Value::isVariable() const {
-    return std::holds_alternative<IdVariable>(data_);
+    return std::holds_alternative<Variable>(data_);
 }
 bool Value::isImmediate() const {
     return std::holds_alternative<Immediate>(data_);
@@ -118,8 +118,8 @@ bool Value::isParaHead() const {
 const Immediate& Value::getImmediate() const {
     return std::get<Immediate>(data_);
 }
-const IdVariable& Value::getIdVariable() const {
-    return std::get<IdVariable>(data_);
+const Variable& Value::getVariable() const {
+    return std::get<Variable>(data_);
 }
 char* Value::getReg() const {
     return std::get<char*>(data_);
@@ -144,8 +144,8 @@ std::string Value::toString() const {
         auto me = std::get<Immediate>(data_);
         return me.content;
     }
-    if (std::holds_alternative<IdVariable>(data_)) {
-        auto me = std::get<IdVariable>(data_);
+    if (std::holds_alternative<Variable>(data_)) {
+        auto me = std::get<Variable>(data_);
         return me.content;
     }
     if (std::holds_alternative<char*>(data_)) {

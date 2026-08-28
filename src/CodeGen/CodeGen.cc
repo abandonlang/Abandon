@@ -57,7 +57,7 @@ std::string CodeGen::get_output() {
 }
 
 void CodeGen::Handle_newFunction_iv(const IR & ir) {
-    std::string func_name = ir.val0.getIdVariable().content;
+    std::string func_name = ir.val0.getVariable().content;
     this->symbol->new_scope();
     this->_output.push_back(FuncData{
         .allocate=0, // not important
@@ -97,7 +97,7 @@ void CodeGen::Handle_endFunction(const IR & ir) {
 }
 void CodeGen::Handle_sign_defineVariable_type_iv(const IR & ir) {
     TypeType var_type = ir.val0.getType();
-    std::string var_name = ir.val1.getIdVariable().content;
+    std::string var_name = ir.val1.getVariable().content;
     this->symbol->insert_variable(var_name, var_type);
 }
 void CodeGen::Handle_mov_iv_imm(const IR & ir) {
@@ -274,7 +274,7 @@ void CodeGen::Handle_pop_iv(const IR & ir) {
     this->append("pop " + this->symbol->get_variable_mem(ir.val0));
 }
 void CodeGen::Handle_call_if(const IR & ir) {
-    this->append("call " + ir.val0.getIdVariable().content);
+    this->append("call " + ir.val0.getVariable().content);
 }
 void CodeGen::Handle_return_with_nothing(const IR & ir) {
     (void)ir;

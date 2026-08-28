@@ -72,7 +72,7 @@ SymbolValue Symbol::get_variable(std::string name) {
 }
 SymbolValue Symbol::get_variable(Value val) {
     if (val.isVariable()) {
-        return this->get_variable(val.getIdVariable().content);
+        return this->get_variable(val.getVariable().content);
     }
     return {.isExist = false,
             .isVariable = false,// not important
@@ -86,7 +86,7 @@ std::string Symbol::get_variable_mem(Value val) {
     if (!val.isVariable()) {
         std::runtime_error("Symbol::get_variable_mem(Value val)");
     }
-    return this->get_variable_mem(val.getIdVariable().content);
+    return this->get_variable_mem(val.getVariable().content);
 }
 
 std::string Symbol::get_variable_mem(std::string name) {

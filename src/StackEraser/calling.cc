@@ -7,7 +7,7 @@
 #include <algorithm>
 
 void StackEraser::Handle_call_if(const IR & i) {
-    std::string func_name = i.val0.getIdVariable().content;
+    std::string func_name = i.val0.getVariable().content;
     SymbolValue func = this->symbol->get(func_name);
     if (func.isExist == false) {
         sayError(std::format("`{}` is not exist as a function.", func_name));

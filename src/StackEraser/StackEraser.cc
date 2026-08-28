@@ -41,7 +41,7 @@ bool StackEraser::isFloat(Value val) const {
         return val.isRegFloat();
     }
     if (val.isVariable()) {
-        std::string var_name = val.getIdVariable().content;
+        std::string var_name = val.getVariable().content;
         SymbolValue sv = this->symbol->get_variable(var_name);
         return sv.isExist && sv.isVariable && sv.type == TYPE_FLOAT;
     }
@@ -58,7 +58,7 @@ TypeType StackEraser::getValueType(Value & val) const {
         else return TYPE_INT;
     }
     if (val.isVariable()) {
-        auto var = this->symbol->get_variable(val.getIdVariable().content);
+        auto var = this->symbol->get_variable(val.getVariable().content);
         return var.type;
     }
     return TYPE_UNKNOWN;
@@ -315,7 +315,7 @@ void StackEraser::Handle_sign_sentence_end(const IR & ir) {
 void StackEraser::Handle_sign_newFunction_iv(const IR & ir) {
     this->append(ir);
     this->symbol->new_scope();
-    SymbolValue func = this->symbol->get(ir.val0.getIdVariable().content);
+    SymbolValue func = this->symbol->get(ir.val0.getVariable().content);
     for (auto arg : func.args) {
         this->symbol->insert_variable(arg.name, arg.type);
     }
@@ -327,7 +327,7 @@ void StackEraser::Handle_sign_endFunction(const IR & ir) {
 void StackEraser::Handle_sign_defineVariable_type_iv(const IR & ir) {
     this->append(ir);
     TypeType var_type = ir.val0.getType();
-    std::string var_name = ir.val1.getIdVariable().content;
+    std::string var_name = ir.val1.getVariable().content;
     this->symbol->insert_variable(var_name, var_type);
 }
 void StackEraser::convert() {
